@@ -69,5 +69,31 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c4>;
 	status = "okay";
+
+	goodix_ts@5d {
+		compatible = "goodix,gt911";
+		reg = <0x5d>;
+
+		interrupt-parent = <&gpio1>;
+		interrupts = <1 IRQ_TYPE_LEVEL_HIGH>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&touchscreen_pins>;
+
+		irq-gpios = <&gpio1 1 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&pca9555 4 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+	};
 };
 
+&mipi_dsi {
+	status = "okay";
+	panel: panel@0 {
+		compatible = "startek,kd050hdfia020";
+		reg = <0>;
+		reset-gpio = <&pca9555 6 GPIO_ACTIVE_LOW>;
+		dsi-lanes = <4>;
+		status = "okay";
+
+	};
+};
