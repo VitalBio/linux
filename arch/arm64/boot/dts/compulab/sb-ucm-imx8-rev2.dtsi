@@ -13,6 +13,35 @@
  */
 
 / {
+	simple_sound: sound {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "cl-imx8m-mini";
+		simple-audio-card,widgets =
+			"Headphone", "Headphone Jack",
+			"Line", "Line Out",
+			"Microphone", "Mic Jack",
+			"Line", "Line In";
+		simple-audio-card,routing =
+			"Headphone Jack", "RHPOUT",
+			"Headphone Jack", "LHPOUT",
+			"MICIN", "Mic Bias",
+			"Mic Bias", "Mic Jack";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,bitclock-master = <&sound_master>;
+		simple-audio-card,frame-master = <&sound_master>;
+
+		sound_master: simple-audio-card,cpu {
+			sound-dai = <&sai2>;
+			system-clock-frequency = <0>;
+			system-clock-direction = "out";
+		};
+
+		sound_codec: simple-audio-card,codec {
+			sound-dai = <&wm8731>;
+			system-clock-direction = "in";
+			system-clock-type = "mclk";
+		};
+	};
 
 	clocks {
 		clk40m: clk@1 {
@@ -69,6 +98,13 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c4>;
 	status = "okay";
+
+	wm8731: wm8731@1a {
+		#sound-dai-cells = <0>;
+		compatible = "wlf,wm8731";
+		reg = <0x1a>;
+		status = "okay";
+	};
 
 	ov5640_mipi: ov5640_mipi@3c {
 		compatible = "ovti,ov5640_mipi";
