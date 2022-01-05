@@ -82,3 +82,5 @@ obj-$(CONFIG_VIDEO_QCOM_VENUS)		+= qcom/venus/
 obj-y					+= bcm2835/
 
 obj-y					+= sunxi/
+
+obj-y					+= vital/

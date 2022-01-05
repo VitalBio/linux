@@ -1,0 +1,8 @@
+
+config VITAL_CYCLOPS_SENSOR_DUMMY
+	tristate "Vital dummy camera sensor driver for Cyclops"
+	depends on VIDEO_V4L2
+	help
+	  This driver provides a v4l2 subdev which doesn't actually talk to the
+	  hardware at all, so that the hardware can be managed from userspace
+	  while still using V4L2 MIPI capture.
