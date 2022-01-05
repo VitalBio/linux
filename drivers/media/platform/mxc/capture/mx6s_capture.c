@@ -238,7 +238,8 @@ struct mx6s_fmt {
 	u32   fourcc;		/* v4l2 format id */
 	u32   pixelformat;
 	u32   mbus_code;
-	int   bpp;
+	int   bpp_numerator; // bytes per pixel numerator
+	int   bpp_denominator; // bytes per pixel denominator (1, except for non-powers-of-8 formats)
 };
 
 static struct mx6s_fmt formats[] = {
@@ -247,25 +248,43 @@ static struct mx6s_fmt formats[] = {
 		.fourcc		= V4L2_PIX_FMT_UYVY,
 		.pixelformat	= V4L2_PIX_FMT_UYVY,
 		.mbus_code	= MEDIA_BUS_FMT_UYVY8_2X8,
-		.bpp		= 2,
+		.bpp_numerator = 2,
+		.bpp_denominator = 1,
 	}, {
 		.name		= "YUYV-16",
 		.fourcc		= V4L2_PIX_FMT_YUYV,
 		.pixelformat	= V4L2_PIX_FMT_YUYV,
 		.mbus_code	= MEDIA_BUS_FMT_YUYV8_2X8,
-		.bpp		= 2,
+		.bpp_numerator = 2,
+		.bpp_denominator = 1,
 	}, {
 		.name		= "YUV32 (X-Y-U-V)",
 		.fourcc		= V4L2_PIX_FMT_YUV32,
 		.pixelformat	= V4L2_PIX_FMT_YUV32,
 		.mbus_code	= MEDIA_BUS_FMT_AYUV8_1X32,
-		.bpp		= 4,
+		.bpp_numerator = 4,
+		.bpp_denominator = 1,
 	}, {
 		.name		= "RAWRGB8 (SBGGR8)",
 		.fourcc		= V4L2_PIX_FMT_SBGGR8,
 		.pixelformat	= V4L2_PIX_FMT_SBGGR8,
 		.mbus_code	= MEDIA_BUS_FMT_SBGGR8_1X8,
-		.bpp		= 1,
+		.bpp_numerator = 1,
+		.bpp_denominator = 1,
+	}, {
+		.name		= "Y8 (RAW8)",
+		.fourcc		= V4L2_PIX_FMT_GREY,
+		.pixelformat	= V4L2_PIX_FMT_GREY,
+		.mbus_code	= MEDIA_BUS_FMT_Y8_1X8,
+		.bpp_numerator = 1,
+		.bpp_denominator = 1,
+	}, {
+		.name		= "Y10 (RAW10)",
+		.fourcc		= V4L2_PIX_FMT_Y10P,
+		.pixelformat	= V4L2_PIX_FMT_Y10P,
+		.mbus_code	= MEDIA_BUS_FMT_Y10_1X10,
+		.bpp_numerator = 5,
+		.bpp_denominator = 4,
 	}
 };
 
@@ -1431,8 +1450,8 @@ static int mx6s_vidioc_try_fmt_vid_cap(struct file *file, void *priv,
 	if (pix->field != V4L2_FIELD_INTERLACED)
 		pix->field = V4L2_FIELD_NONE;
 
-	pix->sizeimage = fmt->bpp * pix->height * pix->width;
-	pix->bytesperline = fmt->bpp * pix->width;
+	pix->sizeimage = fmt->bpp_numerator * (pix->height * pix->width) / fmt->bpp_denominator;
+	pix->bytesperline = fmt->bpp_numerator * (pix->width / fmt->bpp_denominator);
 
 	return ret;
 }
@@ -1453,9 +1472,11 @@ static int mx6s_vidioc_s_fmt_vid_cap(struct file *file, void *priv,
 
 	csi_dev->fmt           = format_by_fourcc(f->fmt.pix.pixelformat);
 	csi_dev->mbus_code     = csi_dev->fmt->mbus_code;
+        csi_dev->pix.pixelformat = f->fmt.pix.pixelformat;
 	csi_dev->pix.width     = f->fmt.pix.width;
 	csi_dev->pix.height    = f->fmt.pix.height;
 	csi_dev->pix.sizeimage = f->fmt.pix.sizeimage;
+	csi_dev->pix.bytesperline = f->fmt.pix.bytesperline;
 	csi_dev->pix.field     = f->fmt.pix.field;
 	csi_dev->type          = f->type;
 	dev_dbg(csi_dev->dev, "set to pixelformat '%4.6s'\n",
