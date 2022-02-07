@@ -1701,6 +1701,13 @@ static int mx6s_vidioc_enum_frameintervals(struct file *file, void *priv,
 	return 0;
 }
 
+static int mx6s_vidioc_log_status(struct file* file, void* priv)
+{
+	struct mx6s_csi_dev *csi_dev = video_drvdata(file);
+	struct v4l2_subdev *sd = csi_dev->sd;
+	return v4l2_subdev_call(sd, core, log_status);
+}
+
 static const struct v4l2_ioctl_ops mx6s_csi_ioctl_ops = {
 	.vidioc_querycap          = mx6s_vidioc_querycap,
 	.vidioc_enum_fmt_vid_cap  = mx6s_vidioc_enum_fmt_vid_cap,
@@ -1727,6 +1734,7 @@ static const struct v4l2_ioctl_ops mx6s_csi_ioctl_ops = {
 	.vidioc_s_parm        = mx6s_vidioc_s_parm,
 	.vidioc_enum_framesizes = mx6s_vidioc_enum_framesizes,
 	.vidioc_enum_frameintervals = mx6s_vidioc_enum_frameintervals,
+        .vidioc_log_status    = mx6s_vidioc_log_status,
 };
 
 static int subdev_notifier_bound(struct v4l2_async_notifier *notifier,
