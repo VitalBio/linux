@@ -10,9 +10,11 @@
 struct pixel_format {
   u32 mbus_code;
   enum v4l2_colorspace colorspace;
+
 };
 
 static const struct pixel_format pixel_formats[] = {
+  { MEDIA_BUS_FMT_SBGGR8_1X8, V4L2_COLORSPACE_RAW },
   { MEDIA_BUS_FMT_Y8_1X8, V4L2_COLORSPACE_RAW },
   { MEDIA_BUS_FMT_Y10_1X10, V4L2_COLORSPACE_RAW },
 };
@@ -22,6 +24,8 @@ struct cyclops_sensor_dummy {
   struct platform_device* platform_device;
   struct clk *sensor_clk;
   u32 selected_mbus_code;
+  u32 width;
+  u32 height;
 };
 
 static struct cyclops_sensor_dummy* sensor_from_subdev(const struct v4l2_subdev* sd)
@@ -48,8 +52,10 @@ static int impl_enum_frame_size(
   if (fse->index)
     return -EINVAL;
 
-  fse->max_width = fse->min_width = 4208;
-  fse->max_height = fse->min_height = 3118;
+  fse->max_width = 10000;
+  fse->max_height = 10000;
+  fse->min_width = 1;
+  fse->min_height = 1;
   return 0;
 }
 
@@ -66,8 +72,8 @@ static int impl_get_fmt(
     return -EINVAL;
   }
 
-  format->format.width = 4208;
-  format->format.height = 3118;
+  format->format.width = sensor->width;
+  format->format.height = sensor->height;
   format->format.code = sensor->selected_mbus_code;
   format->format.field = V4L2_FIELD_NONE;
 
@@ -103,8 +109,9 @@ static int impl_set_fmt(
 
   sensor->selected_mbus_code = format->format.code;
 
-  format->format.width = 4208;
-  format->format.height = 3118;
+  sensor->width = format->format.width;
+  sensor->height = format->format.height;
+
   format->format.field = V4L2_FIELD_NONE;
 
   return 0;
@@ -148,6 +155,8 @@ static int impl_probe(struct platform_device* pdev)
 
   sd = &sensor->subdev;
   sensor->platform_device = pdev;
+  sensor->width = 1;
+  sensor->height = 1;
   sensor->selected_mbus_code = MEDIA_BUS_FMT_Y8_1X8;
 
   sensor->sensor_clk = devm_clk_get(dev, "csi_mclk");
