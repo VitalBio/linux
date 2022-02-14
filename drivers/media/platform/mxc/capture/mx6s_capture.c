@@ -1038,6 +1038,7 @@ static void mx6s_csi_frame_done(struct mx6s_csi_dev *csi_dev,
 			       queue);
 
 	if (ibuf->discard) {
+                dev_dbg(csi_dev->dev, "%s discard ibuf for bufnum %d err %d", __func__, bufnum, err);
 		/*
 		 * Discard buffer must not be returned to user space.
 		 * Just return it to the discard queue.
@@ -1074,6 +1075,7 @@ static void mx6s_csi_frame_done(struct mx6s_csi_dev *csi_dev,
 			vb2_buffer_done(vb, VB2_BUF_STATE_DONE);
 	}
 
+        dev_dbg(csi_dev->dev, "%s buffer done, bufnum %d, err %d, frame_count before %u", __func__, bufnum, err, csi_dev->frame_count);
 	csi_dev->frame_count++;
 	csi_dev->nextfb = (bufnum == 0 ? 1 : 0);
 
@@ -1121,6 +1123,8 @@ static irqreturn_t mx6s_csi_irq_handler(int irq, void *data)
 
 	status = csi_read(csi_dev, CSI_CSISR);
 	csi_write(csi_dev, status, CSI_CSISR);
+
+        dev_dbg(csi_dev->dev, "%s ISR called with %08lx", __func__, status);
 
 	if (list_empty(&csi_dev->active_bufs)) {
 		dev_warn(csi_dev->dev,
@@ -1174,18 +1178,20 @@ static irqreturn_t mx6s_csi_irq_handler(int irq, void *data)
 		pr_debug("Skip two frames\n");
 	} else if (status & BIT_DMA_TSF_DONE_FB1) {
 		if (csi_dev->nextfb == 0) {
-			if (csi_dev->skipframe > 0)
+			if (csi_dev->skipframe > 0) {
+                                dev_dbg(csi_dev->dev, "%s FB1 DMA done but skipping frame (%d)", __func__, csi_dev->skipframe);
 				csi_dev->skipframe--;
-			else
+                        } else
 				mx6s_csi_frame_done(csi_dev, 0, false);
 		} else
 			pr_warn("skip frame 0\n");
 
 	} else if (status & BIT_DMA_TSF_DONE_FB2) {
 		if (csi_dev->nextfb == 1) {
-			if (csi_dev->skipframe > 0)
+			if (csi_dev->skipframe > 0) {
+                                dev_dbg(csi_dev->dev, "%s FB2 DMA done but skipping frame (%d)", __func__, csi_dev->skipframe);
 				csi_dev->skipframe--;
-			else
+			} else
 				mx6s_csi_frame_done(csi_dev, 1, false);
 		} else
 			pr_warn("skip frame 1\n");
@@ -1705,6 +1711,35 @@ static int mx6s_vidioc_log_status(struct file* file, void* priv)
 {
 	struct mx6s_csi_dev *csi_dev = video_drvdata(file);
 	struct v4l2_subdev *sd = csi_dev->sd;
+
+	struct {
+		u32 offset;
+		const char * const name;
+	} registers[] = {
+		{ 0x00, "CSI_CR1" },
+		{ 0x04, "CSI_CR2" },
+		{ 0x08, "CSI_CR3" },
+		{ 0x0c, "CSI_STATFIFO" },
+		{ 0x10, "CSI_RFIFO" },
+		{ 0x14, "CSI_RXCNT" },
+		{ 0x18, "CSI_SR" },
+		{ 0x20, "CSI_DMASR_STATFIFO" },
+		{ 0x24, "CSI_DMATS_STATFIFO" },
+		{ 0x28, "CSI_DMASA_FB1" },
+		{ 0x2c, "CSI_DMASA_FB2" },
+		{ 0x30, "CSI_FBUF_PARA" },
+		{ 0x34, "CSI_IMAG_PARA" },
+		{ 0x48, "CSI_CR18" },
+	};
+	u32 i;
+
+	v4l2_info(&csi_dev->v4l2_dev, "--- %s ---\n", __func__);
+
+	for (i = 0; i < ARRAY_SIZE(registers); i++) {
+		u32 cfg = csi_read(csi_dev, registers[i].offset);
+		v4l2_info(&csi_dev->v4l2_dev, "%30s: 0x%08x\n", registers[i].name, cfg);
+	}
+
 	return v4l2_subdev_call(sd, core, log_status);
 }
 
