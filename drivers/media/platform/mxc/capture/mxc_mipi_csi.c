@@ -363,9 +363,9 @@ static void mipi_csis_enable_interrupts(struct csi_state *state, bool on)
 {
 	u32 val = mipi_csis_read(state, MIPI_CSIS_INTMSK);
 	if (on)
-		val |= 0xf00fffff;
+		val |= 0xf11fffff;
 	else
-		val &= ~0xf00fffff;
+		val &= ~0xf11fffff;
 	mipi_csis_write(state, MIPI_CSIS_INTMSK, val);
 }
 
@@ -610,13 +610,22 @@ static void dump_regs(struct csi_state *state, const char *label)
 		u32 offset;
 		const char * const name;
 	} registers[] = {
-		{ 0x00, "CTRL" },
-		{ 0x04, "DPHYCTRL" },
-		{ 0x08, "CONFIG" },
-		{ 0x0c, "DPHYSTS" },
-		{ 0x10, "INTMSK" },
-		{ 0x2c, "RESOL" },
-		{ 0x38, "SDW_CONFIG" },
+		{ 0x04, "COMMON_CTRL" },
+		{ 0x08, "CLOCK_CTRL" },
+		{ 0x10, "INTERRUPT_MASK_0" },
+		{ 0x14, "INTERRUPT_SOURCE_0" },
+		{ 0x18, "INTERRUPT_MASK_1" },
+		{ 0x1c, "INTERRUPT_SOURCE_1" },
+		{ 0x20, "DPHY_STATUS" },
+		{ 0x24, "DPHY_COMMON_CTRL" },
+		{ 0x30, "DPHY_MASTER_SLAVE_CTRL_LOW" },
+		{ 0x34, "DPHY_MASTER_SLAVE_CTRL_HIGH" },
+		{ 0x38, "DPHY_SLAVE_CTRL_LOW" },
+		{ 0x3c, "DPHY_SLAVE_CTRL_HIGH" },
+		{ 0x40, "ISP_CONFIG" },
+		{ 0x44, "ISP_RESOLUTION" },
+		{ 0x48, "ISP_SYNC" },
+		{ 0x100, "FRAME_COUNTER" },
 	};
 	u32 i;
 
@@ -624,7 +633,7 @@ static void dump_regs(struct csi_state *state, const char *label)
 
 	for (i = 0; i < ARRAY_SIZE(registers); i++) {
 		u32 cfg = mipi_csis_read(state, registers[i].offset);
-		v4l2_info(&state->mipi_sd, "%10s: 0x%08x\n", registers[i].name, cfg);
+		v4l2_info(&state->mipi_sd, "%30s: 0x%08x\n", registers[i].name, cfg);
 	}
 }
 
