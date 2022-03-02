@@ -43,6 +43,10 @@ static int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "Debug level (0-2)");
 
+static int hssettle;
+module_param(hssettle, int, 0644);
+MODULE_PARM_DESC(hssettle, "HSSETTLE param");
+
 #define CSIS_DRIVER_NAME	"mxc_mipi-csi"
 #define CSIS_SUBDEV_NAME	CSIS_DRIVER_NAME
 #define CSIS_MAX_ENTITIES	2
@@ -510,7 +514,7 @@ static void mipi_csis_set_params(struct csi_state *state)
 
 	__mipi_csis_set_format(state);
 
-	mipi_csis_set_hsync_settle(state, state->hs_settle, state->clk_settle);
+	mipi_csis_set_hsync_settle(state, hssettle ? hssettle : state->hs_settle, state->clk_settle);
 
 	val = mipi_csis_read(state, MIPI_CSIS_ISPCONFIG_CH0);
 	if (state->csis_fmt->data_alignment == 32)
