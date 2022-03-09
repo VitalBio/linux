@@ -217,6 +217,6 @@ module_platform_driver(impl_driver);
 
 MODULE_AUTHOR("Vital Biosciences");
 MODULE_DESCRIPTION("Vital dummy camera sensor driver for Cyclops");
-MODULE_LICENSE("Proprietary");
+MODULE_LICENSE("GPL");
 MODULE_VERSION("1.0");
 MODULE_ALIAS("platform:vital_cyclops_sensor_dummy");
