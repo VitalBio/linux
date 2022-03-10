@@ -628,3 +628,5 @@ cam0_reg: &cam_dummy_reg {
 			   <&spi0>, "dmas:8=", <&dma40>;
 	};
 };
+
+#include "imx258.dtsi"
