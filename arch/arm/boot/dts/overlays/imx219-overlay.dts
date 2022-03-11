@@ -30,20 +30,16 @@
 		};
 	};
 
-	i2c_frag: fragment@100 {
-		target = <&i2c_csi_dsi>;
+	fragment@3 {
+		target-path = "/";
 		__overlay__ {
-			#address-cells = <1>;
-			#size-cells = <0>;
-			status = "okay";
-
 			imx219: imx219@10 {
-				compatible = "sony,imx219";
+				compatible = "vital,cyclops_sensor_dummy";
 				reg = <0x10>;
 				status = "okay";
 
 				clocks = <&cam1_clk>;
-				clock-names = "xclk";
+				clock-names = "csi_mclk";
 
 				VANA-supply = <&cam1_reg>;	/* 2.8v */
 				VDIG-supply = <&cam_dummy_reg>;	/* 1.8v */
@@ -59,10 +55,19 @@
 						data-lanes = <1 2>;
 						clock-noncontinuous;
 						link-frequencies =
-							/bits/ 64 <456000000>;
+						/bits/ 64 <456000000>;
 					};
 				};
 			};
+		};
+	};
+
+	i2c_frag: fragment@100 {
+		target = <&i2c_csi_dsi>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
 		};
 	};
 

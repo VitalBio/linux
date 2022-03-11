@@ -3,9 +3,26 @@
 #include <linux/platform_device.h>
 #include <linux/clk.h>
 #include <linux/v4l2-mediabus.h>
+#include <linux/regulator/consumer.h>
 #include <media/v4l2-device.h>
 #include <media/v4l2-ctrls.h>
 
+
+/* regulator supplies */
+static const char * const sensor_supply_name[] = {
+  /* Supplies can be enabled in any order */
+  "VANA",  /* Analog (2.8V) supply */
+  /* "VDIG",  /\* Digital Core (1.8V) supply *\/ */
+  /* "VDDL",  /\* IF (1.2V) supply *\/ */
+};
+
+#define SENSOR_NUM_SUPPLIES ARRAY_SIZE(sensor_supply_name)
+
+enum pad_types {
+  IMAGE_PAD,
+  METADATA_PAD,
+  NUM_PADS
+};
 
 struct pixel_format {
   u32 mbus_code;
@@ -21,7 +38,9 @@ static const struct pixel_format pixel_formats[] = {
 
 struct cyclops_sensor_dummy {
   struct v4l2_subdev subdev;
+  struct media_pad pad[NUM_PADS];
   struct platform_device* platform_device;
+  struct regulator_bulk_data supplies[SENSOR_NUM_SUPPLIES];
   struct clk *sensor_clk;
   u32 selected_mbus_code;
   u32 width;
@@ -140,11 +159,51 @@ static const struct v4l2_subdev_ops impl_ops = {
   .pad = &impl_pad_ops,
 };
 
+static int impl_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
+{
+  /* struct cyclops_sensor_dummy *sensor = sensor_from_subdev(sd); */
+  struct v4l2_mbus_framefmt *try_fmt_img =
+    v4l2_subdev_get_try_format(sd, fh->pad, IMAGE_PAD);
+  struct v4l2_mbus_framefmt *try_fmt_meta =
+    v4l2_subdev_get_try_format(sd, fh->pad, METADATA_PAD);
+  struct v4l2_rect *try_crop;
+
+  /* mutex_lock(&sensor->mutex); */
+
+  /* Initialize try_fmt for the image pad */
+  try_fmt_img->width = 1052;
+  try_fmt_img->height = 780;
+  try_fmt_img->code = MEDIA_BUS_FMT_Y8_1X8;
+  try_fmt_img->field = V4L2_FIELD_NONE;
+
+  /* Initialize try_fmt for the embedded metadata pad */
+  try_fmt_meta->width = 16384;
+  try_fmt_meta->height = 1;
+  try_fmt_meta->code = MEDIA_BUS_FMT_SENSOR_DATA;
+  try_fmt_meta->field = V4L2_FIELD_NONE;
+
+  /* Initialize try_crop rectangle. */
+  try_crop = v4l2_subdev_get_try_crop(sd, fh->pad, 0);
+  try_crop->top = 0;
+  try_crop->left = 0;
+  try_crop->width = 1052;
+  try_crop->height = 780;
+
+  /* mutex_unlock(&sensor->mutex); */
+
+  return 0;
+}
+
+static const struct v4l2_subdev_internal_ops impl_internal_ops = {
+  .open = impl_open,
+};
+
 static int impl_probe(struct platform_device* pdev)
 {
   struct device* dev = &pdev->dev;
   struct cyclops_sensor_dummy* sensor;
   struct v4l2_subdev* sd;
+  unsigned int i;
   int retval;
 
   dev_info(dev, "Vital Cyclops sensor dummy driver probing");
@@ -159,6 +218,27 @@ static int impl_probe(struct platform_device* pdev)
   sensor->height = 1;
   sensor->selected_mbus_code = MEDIA_BUS_FMT_Y8_1X8;
 
+  /*
+   * Power On
+   */
+  for (i = 0; i < SENSOR_NUM_SUPPLIES; i++) {
+    sensor->supplies[i].supply = sensor_supply_name[i];
+  }
+
+  retval = devm_regulator_bulk_get(dev, SENSOR_NUM_SUPPLIES, sensor->supplies);
+  if (retval) {
+    dev_err(dev, "failed to get regulator: %d\n", retval);
+    return retval;
+  }
+
+  retval = regulator_bulk_enable(SENSOR_NUM_SUPPLIES, sensor->supplies);
+  if (retval) {
+    dev_err(dev, "%s: failed to enable regulator\n", __func__);
+    return retval;
+  }
+
+  /* imx219->reset_gpio = devm_gpiod_get_optional(dev, "reset", GPIOD_OUT_HIGH); */
+
   sensor->sensor_clk = devm_clk_get(dev, "csi_mclk");
   if (IS_ERR(sensor->sensor_clk)) {
     dev_err(dev, "failed to get csi_mclk");
@@ -171,6 +251,18 @@ static int impl_probe(struct platform_device* pdev)
   sd->flags |= 0;
   sd->owner = dev->driver->owner;
   sd->dev = dev;
+  sd->entity.function = MEDIA_ENT_F_CAM_SENSOR;
+  sd->internal_ops = &impl_internal_ops;
+
+  /* Initialize source pads */
+  sensor->pad[IMAGE_PAD].flags = MEDIA_PAD_FL_SOURCE;
+  sensor->pad[METADATA_PAD].flags = MEDIA_PAD_FL_SOURCE;
+
+  retval = media_entity_pads_init(&sd->entity, NUM_PADS, sensor->pad);
+  if (retval)
+    dev_err(dev, "failed to init entity pads: %d\n", retval);
+    /* goto error_handler_free; */
+
   platform_set_drvdata(pdev, sd);
   snprintf(sd->name, sizeof(sd->name), "%s %d", dev->driver->name, pdev->id);
   v4l2_set_subdevdata(sd, pdev);
