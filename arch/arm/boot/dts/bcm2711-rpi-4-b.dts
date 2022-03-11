@@ -629,4 +629,4 @@ cam0_reg: &cam_dummy_reg {
 	};
 };
 
-#include "imx258.dtsi"
+// #include "imx258.dtsi"

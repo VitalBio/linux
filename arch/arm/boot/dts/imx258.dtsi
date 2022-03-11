@@ -1,5 +1,12 @@
 #include <dt-bindings/gpio/gpio.h>
 
+&cam1_reg {
+  status = "okay";
+  regulator-name = "imx219_vana";
+  regulator-min-microvolt = <2800000>;
+  regulator-max-microvolt = <2800000>;
+};
+
 &i2c0if {
   status = "okay";
 };
@@ -17,14 +24,16 @@
   #address-cells = <1>;
   #size-cells = <0>;
   status = "okay";
+};
 
+/ {
   imx258: imx258@1a {
     compatible = "vital,cyclops_sensor_dummy";
     reg = <0x1a>;
     status = "okay";
 
     clocks = <&cam1_clk>;
-    clock-names = "xclk";
+    clock-names = "csi_mclk";
 
     VANA-supply = <&cam1_reg>;  /* 2.8v */
     VDIG-supply = <&cam_dummy_reg>;  /* 1.8v */
