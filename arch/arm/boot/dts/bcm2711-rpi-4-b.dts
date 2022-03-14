@@ -605,6 +605,7 @@
 
 &cam1_reg {
 	gpio = <&expgpio 5 GPIO_ACTIVE_HIGH>;
+	regulator-always-on;
 };
 
 cam0_reg: &cam_dummy_reg {
