@@ -110,8 +110,7 @@ static int impl_set_fmt(
   int i;
 
   if (format->which != V4L2_SUBDEV_FORMAT_ACTIVE) {
-    dev_err(dev, "set_fmt with which != V4L2_SUBDEV_FORMAT_ACTIVE - dummy driver does not support negotiation since mx6s_capture doesn't require it");
-    return -EINVAL;
+    dev_err(dev, "set_fmt with which != V4L2_SUBDEV_FORMAT_ACTIVE - is not-implemented.");
   }
 
   found = 0;
@@ -214,8 +213,8 @@ static int impl_probe(struct platform_device* pdev)
 
   sd = &sensor->subdev;
   sensor->platform_device = pdev;
-  sensor->width = 1;
-  sensor->height = 1;
+  sensor->width = 1052;
+  sensor->height = 780;
   sensor->selected_mbus_code = MEDIA_BUS_FMT_Y8_1X8;
 
   /*

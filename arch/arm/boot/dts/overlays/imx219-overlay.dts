@@ -75,7 +75,6 @@
 		target = <&csi1>;
 		csi: __overlay__ {
 			status = "okay";
-			brcm,media-controller;
 
 			port {
 				csi_ep: endpoint {
