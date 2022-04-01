@@ -122,7 +122,7 @@ static int impl_set_fmt(
   }
   if (!found) {
     dev_err(dev, "set_fmt with unsupported mbus code %u", (unsigned int)format->format.code);
-    return -EINVAL;
+    /* return -EINVAL; */
   }
 
   sensor->selected_mbus_code = format->format.code;
