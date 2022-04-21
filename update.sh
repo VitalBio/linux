@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-sudo cp arch/arm64/boot/dts/overlays/*.dtb* /run/media/michael/boot/overlays/
+BOOT="${BOOT:-/run/media/michael/boot}"
+ROOT="${ROOT:-/run/media/michael/rootfs}"
 
-sudo cp arch/arm64/boot/dts/broadcom/*.dtb /run/media/michael/boot/
+sudo cp arch/arm64/boot/dts/overlays/*.dtb* "$BOOT"/overlays/
 
-sudo cp arch/arm64/boot/Image /run/media/michael/boot/kernel8.img
+sudo cp arch/arm64/boot/dts/broadcom/*.dtb "$BOOT"/
 
-sudo make INSTALL_MOD_PATH=/run/media/michael/rootfs modules_install
+sudo cp arch/arm64/boot/Image "$BOOT"/kernel8.img
+
+sudo make INSTALL_MOD_PATH="$ROOT" modules_install
 
 sudo sync
 
