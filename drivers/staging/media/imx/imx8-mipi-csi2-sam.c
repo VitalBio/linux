@@ -538,6 +538,10 @@ static void dump_csis_regs(struct csi_state *state, const char *label)
 		{ 0x58, "CSIS_ISPSYNC_CH1" },
 		{ 0x68, "CSIS_ISPSYNC_CH2" },
 		{ 0x78, "CSIS_ISPSYNC_CH3" },
+		{ 0x0100, "CSIS_FRAME_COUNTER_CH0" },
+		{ 0x0104, "CSIS_FRAME_COUNTER_CH1" },
+		{ 0x0108, "CSIS_FRAME_COUNTER_CH2" },
+		{ 0x010c, "CSIS_FRAME_COUNTER_CH3" },
 	};
 	u32 i;
 
