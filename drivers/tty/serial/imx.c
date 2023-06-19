@@ -1505,8 +1505,8 @@ static int imx_uart_startup(struct uart_port *port)
 	if (dma_is_inited) {
 		/* Note: enable dma request after transfer start! */
 		retval = imx_uart_start_rx_dma(sport);
-		if (!retval)
-			return retval;
+		if (retval)
+			goto out;
 		imx_uart_enable_dma(sport);
 	} else {
 		ucr1 = imx_uart_readl(sport, UCR1);
@@ -1518,9 +1518,10 @@ static int imx_uart_startup(struct uart_port *port)
 		imx_uart_writel(sport, ucr2, UCR2);
 	}
 
+out:
 	spin_unlock_irqrestore(&sport->port.lock, flags);
 
-	return 0;
+	return retval;
 }
 
 static void imx_uart_shutdown(struct uart_port *port)
