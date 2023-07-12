@@ -98,10 +98,6 @@ enum mxc_isi_out_fmt {
 	MXC_ISI_OUT_FMT_YUV420_3P12,
 };
 
-enum mxc_isi_in_fmt {
-	MXC_ISI_IN_FMT_BGR8P	= 0x0,
-};
-
 enum mxc_isi_m2m_in_fmt {
 	MXC_ISI_M2M_IN_FMT_BGR8P	= 0x0,
 	MXC_ISI_M2M_IN_FMT_RGB8P,

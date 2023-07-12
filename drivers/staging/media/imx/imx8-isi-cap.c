@@ -62,8 +62,39 @@ struct mxc_isi_fmt mxc_isi_src_formats[] = {
 		.memplanes	= 1,
 		.colplanes	= 1,
 		.mbus_code	= MEDIA_BUS_FMT_UYVY8_2X8,
+	}, {
+		.name		= "GBRG8 bayer",
+		.fourcc		= V4L2_PIX_FMT_SGRBG8,
+		.depth		= { 8 },
+		/* Expecting not to use the ISI to debayer */
+		.color		= MXC_ISI_OUT_FMT_RAW8,
+		.memplanes	= 1,
+		.colplanes	= 1,
+		.mbus_code	= MEDIA_BUS_FMT_SGRBG8_1X8,
+		.align 		= 2,
+	}, {
+		.name		= "RAW8",
+		.fourcc		= V4L2_PIX_FMT_GREY,
+		.depth		= { 8 },
+		.color		= MXC_ISI_OUT_FMT_RAW8,
+		.memplanes	= 1,
+		.colplanes	= 1,
+		.mbus_code	= MEDIA_BUS_FMT_Y8_1X8,
+		.align 		= 2,
+	}, {
+		.name		= "RAW10 (packed)",
+		.fourcc		= V4L2_PIX_FMT_Y10P,
+		.depth		= { 10 },
+		.color		= MXC_ISI_OUT_FMT_RAW10P,
+		.memplanes	= 1,
+		.colplanes	= 1,
+		/* FIXME? qcom-camss maps this way but 1X10 is not quite right */
+		.mbus_code	= MEDIA_BUS_FMT_Y10_1X10,
+		.align 		= 3,
 	}
 };
+
+size_t mxc_isi_src_formats_size = ARRAY_SIZE(mxc_isi_src_formats);
 
 struct mxc_isi_fmt *mxc_isi_get_format(unsigned int index)
 {
@@ -74,42 +105,30 @@ struct mxc_isi_fmt *mxc_isi_get_format(unsigned int index)
  * lookup mxc_isi color format by fourcc or media bus format
  */
 struct mxc_isi_fmt *mxc_isi_find_format(const u32 *pixelformat,
-					const u32 *mbus_code, int index)
+					const u32 *mbus_code)
 {
 	struct mxc_isi_fmt *fmt, *def_fmt = NULL;
 	unsigned int i;
-	int id = 0;
 
-	if (index >= (int)mxc_isi_out_formats_size)
-		return NULL;
-
-	for (i = 0; i < mxc_isi_out_formats_size; i++) {
-		fmt = &mxc_isi_out_formats[i];
+	for (i = 0, fmt = mxc_isi_out_formats; i < mxc_isi_out_formats_size; ++i, ++fmt) {
 		if (pixelformat && fmt->fourcc == *pixelformat)
 			return fmt;
 		if (mbus_code && fmt->mbus_code == *mbus_code)
 			return fmt;
-		if (index == id)
-			def_fmt = fmt;
-		id++;
 	}
-	return def_fmt;
+	return NULL;
 }
 
 struct mxc_isi_fmt *mxc_isi_get_src_fmt(struct v4l2_subdev_format *sd_fmt)
 {
-	u32 index;
+	unsigned int i;
+	struct mxc_isi_fmt* fmt;
 
-	/* two fmt RGB32 and YUV444 from pixellink */
-	if (sd_fmt->format.code == MEDIA_BUS_FMT_YUYV8_1X16 ||
-	    sd_fmt->format.code == MEDIA_BUS_FMT_YVYU8_2X8 ||
-	    sd_fmt->format.code == MEDIA_BUS_FMT_AYUV8_1X32 ||
-	    sd_fmt->format.code == MEDIA_BUS_FMT_UYVY8_2X8 ||
-	    sd_fmt->format.code == MEDIA_BUS_FMT_YUYV8_2X8)
-		index = 1;
-	else
-		index = 0;
-	return &mxc_isi_src_formats[index];
+	for (i = 0, fmt = mxc_isi_src_formats; i < mxc_isi_src_formats_size; ++i, ++fmt) {
+		if (sd_fmt->format.code == fmt->mbus_code)
+			return fmt;
+	}
+	return NULL;
 }
 
 static inline struct mxc_isi_buffer *to_isi_buffer(struct vb2_v4l2_buffer *v4l2_buf)
@@ -700,7 +719,7 @@ static int isi_cap_fmt_init(struct mxc_isi_cap_dev *isi_cap)
 
 	for (i = 0; i < dst_f->fmt->memplanes; i++) {
 		if (dst_f->bytesperline[i] == 0)
-			dst_f->bytesperline[i] = dst_f->width * dst_f->fmt->depth[i] >> 3;
+			dst_f->bytesperline[i] = (dst_f->width * dst_f->fmt->depth[i]) >> 3;
 		if (dst_f->sizeimage[i] == 0)
 			dst_f->sizeimage[i] = dst_f->bytesperline[i] * dst_f->height;
 	}
@@ -876,15 +895,10 @@ static int mxc_isi_cap_try_fmt_mplane(struct file *file, void *fh,
 
 	dev_dbg(&isi_cap->pdev->dev, "%s\n", __func__);
 
-	for (i = 0; i < mxc_isi_out_formats_size; i++) {
-		fmt = &mxc_isi_out_formats[i];
-		if (fmt->fourcc == pix->pixelformat)
-			break;
-	}
-
-	if (i >= mxc_isi_out_formats_size) {
-		fmt = &mxc_isi_out_formats[0];
-		v4l2_warn(&isi_cap->sd, "Not match format, set default\n");
+	fmt = mxc_isi_find_format(&(pix->pixelformat), NULL);
+	if (!fmt) {
+		v4l2_err(&isi_cap->sd, "unsupported ISI capture format 0x%X\n", pix->pixelformat);
+		return -EINVAL;
 	}
 
 	/*
@@ -907,19 +921,19 @@ static int mxc_isi_cap_try_fmt_mplane(struct file *file, void *fh,
 	memset(pix->reserved, 0x00, sizeof(pix->reserved));
 
 	for (i = 0; i < pix->num_planes; i++) {
-		bpl = pix->plane_fmt[i].bytesperline;
+		bpl = pix->plane_fmt[i].bytesperline << 3;
 
-		if ((bpl == 0) || (bpl / (fmt->depth[i] >> 3)) < pix->width)
+		if ((bpl / fmt->depth[i]) < pix->width)
 			pix->plane_fmt[i].bytesperline =
 					(pix->width * fmt->depth[i]) >> 3;
 
 		if (pix->plane_fmt[i].sizeimage == 0) {
 			if ((i == 1) && (pix->pixelformat == V4L2_PIX_FMT_NV12))
 				pix->plane_fmt[i].sizeimage =
-				  (pix->width * (pix->height >> 1) * fmt->depth[i] >> 3);
+				  (pix->width * (pix->height >> 1) * fmt->depth[i]) >> 3;
 			else
 				pix->plane_fmt[i].sizeimage =
-					(pix->width * pix->height * fmt->depth[i] >> 3);
+					(pix->width * pix->height * fmt->depth[i]) >> 3;
 		}
 	}
 
@@ -949,7 +963,7 @@ static int mxc_isi_source_fmt_init(struct mxc_isi_cap_dev *isi_cap)
 
 	src_fmt.pad = source_pad->index;
 	src_fmt.which = V4L2_SUBDEV_FORMAT_ACTIVE;
-	src_fmt.format.code = MEDIA_BUS_FMT_UYVY8_2X8;
+	src_fmt.format.code = dst_f->fmt->mbus_code;
 	src_fmt.format.width = dst_f->width;
 	src_fmt.format.height = dst_f->height;
 	ret = v4l2_subdev_call(src_sd, pad, set_fmt, NULL, &src_fmt);
@@ -967,8 +981,9 @@ static int mxc_isi_source_fmt_init(struct mxc_isi_cap_dev *isi_cap)
 		return ret;
 	}
 
-	/* Pixel link master will transfer format to RGB32 or YUV32 */
 	src_f->fmt = mxc_isi_get_src_fmt(&src_fmt);
+	if (!src_f->fmt)
+		return -EINVAL;
 
 	set_frame_bounds(src_f, src_fmt.format.width, src_fmt.format.height);
 
@@ -1007,15 +1022,11 @@ static int mxc_isi_cap_s_fmt_mplane(struct file *file, void *priv,
 	if (vb2_is_busy(&isi_cap->vb2_q))
 		return -EBUSY;
 
-	for (i = 0; i < mxc_isi_out_formats_size; i++) {
-		fmt = &mxc_isi_out_formats[i];
-		if (fmt->fourcc == pix->pixelformat)
-			break;
-	}
-
-	if (i >= mxc_isi_out_formats_size) {
+	fmt = mxc_isi_find_format(&(pix->pixelformat), NULL);
+	if (!fmt) {
 		fmt = &mxc_isi_out_formats[0];
-		v4l2_warn(&isi_cap->sd, "Not match format, set default\n");
+		v4l2_err(&isi_cap->sd, "mplane format requested 0x$X is not supported by ISI");
+		return -EINVAL;
 	}
 
 	ret = mxc_isi_cap_try_fmt_mplane(file, priv, f);
@@ -1029,19 +1040,19 @@ static int mxc_isi_cap_s_fmt_mplane(struct file *file, void *priv,
 	pix->num_planes = fmt->memplanes;
 
 	for (i = 0; i < pix->num_planes; i++) {
-		bpl = pix->plane_fmt[i].bytesperline;
+		bpl = pix->plane_fmt[i].bytesperline << 3;
 
-		if ((bpl == 0) || (bpl / (fmt->depth[i] >> 3)) < pix->width)
+		if ((bpl / fmt->depth[i]) < pix->width)
 			pix->plane_fmt[i].bytesperline =
 					(pix->width * fmt->depth[i]) >> 3;
 
 		if (pix->plane_fmt[i].sizeimage == 0) {
 			if ((i == 1) && (pix->pixelformat == V4L2_PIX_FMT_NV12))
 				pix->plane_fmt[i].sizeimage =
-				  (pix->width * (pix->height >> 1) * fmt->depth[i] >> 3);
+				  (pix->width * (pix->height >> 1) * fmt->depth[i]) >> 3;
 			else
 				pix->plane_fmt[i].sizeimage =
-					(pix->width * pix->height * fmt->depth[i] >> 3);
+					(pix->width * pix->height * fmt->depth[i]) >> 3;
 		}
 	}
 
@@ -1051,7 +1062,7 @@ static int mxc_isi_cap_s_fmt_mplane(struct file *file, void *priv,
 			dst_f->sizeimage[i]    = pix->plane_fmt[i].sizeimage;
 		}
 	} else {
-		dst_f->bytesperline[0] = dst_f->width * dst_f->fmt->depth[0] / 8;
+		dst_f->bytesperline[0] = (dst_f->width * dst_f->fmt->depth[0]) >> 3;
 		dst_f->sizeimage[0]    = dst_f->height * dst_f->bytesperline[0];
 	}
 
@@ -1286,7 +1297,7 @@ static int mxc_isi_cap_enum_framesizes(struct file *file, void *priv,
 	};
 	int ret;
 
-	fmt = mxc_isi_find_format(&fsize->pixel_format, NULL, 0);
+	fmt = mxc_isi_find_format(&fsize->pixel_format, NULL);
 	if (!fmt || fmt->fourcc != fsize->pixel_format)
 		return -EINVAL;
 	fse.code = fmt->mbus_code;
@@ -1341,7 +1352,7 @@ static int mxc_isi_cap_enum_frameintervals(struct file *file, void *fh,
 	};
 	int ret;
 
-	fmt = mxc_isi_find_format(&interval->pixel_format, NULL, 0);
+	fmt = mxc_isi_find_format(&interval->pixel_format, NULL);
 	if (!fmt || fmt->fourcc != interval->pixel_format)
 		return -EINVAL;
 	fie.code = fmt->mbus_code;

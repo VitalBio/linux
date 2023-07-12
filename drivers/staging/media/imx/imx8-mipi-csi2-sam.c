@@ -227,32 +227,32 @@
 #define DEFAULT_SCLK_CSIS_FREQ		166000000UL
 
 /* display_mix_clk_en_csr */
-#define DISP_MIX_GASKET_0_CTRL			0x00
-#define GASKET_0_CTRL_DATA_TYPE(x)		(((x) & (0x3F)) << 8)
-#define GASKET_0_CTRL_DATA_TYPE_MASK		((0x3FUL) << (8))
+#define DISP_MIX_GASKET_CTRL			0x00
+#define GASKET_CTRL_DATA_TYPE(x)		(((x) & (0x3F)) << 8)
+#define GASKET_CTRL_DATA_TYPE_MASK		((0x3FUL) << (8))
 
-#define GASKET_0_CTRL_DATA_TYPE_YUV420_8	0x18
-#define GASKET_0_CTRL_DATA_TYPE_YUV420_10	0x19
-#define GASKET_0_CTRL_DATA_TYPE_LE_YUV420_8	0x1a
-#define GASKET_0_CTRL_DATA_TYPE_CS_YUV420_8	0x1c
-#define GASKET_0_CTRL_DATA_TYPE_CS_YUV420_10	0x1d
-#define GASKET_0_CTRL_DATA_TYPE_YUV422_8	0x1e
-#define GASKET_0_CTRL_DATA_TYPE_YUV422_10	0x1f
-#define GASKET_0_CTRL_DATA_TYPE_RGB565		0x22
-#define GASKET_0_CTRL_DATA_TYPE_RGB666		0x23
-#define GASKET_0_CTRL_DATA_TYPE_RGB888		0x24
-#define GASKET_0_CTRL_DATA_TYPE_RAW6		0x28
-#define GASKET_0_CTRL_DATA_TYPE_RAW7		0x29
-#define GASKET_0_CTRL_DATA_TYPE_RAW8		0x2a
-#define GASKET_0_CTRL_DATA_TYPE_RAW10		0x2b
-#define GASKET_0_CTRL_DATA_TYPE_RAW12		0x2c
-#define GASKET_0_CTRL_DATA_TYPE_RAW14		0x2d
+#define GASKET_CTRL_DATA_TYPE_YUV420_8	0x18
+#define GASKET_CTRL_DATA_TYPE_YUV420_10	0x19
+#define GASKET_CTRL_DATA_TYPE_LE_YUV420_8	0x1a
+#define GASKET_CTRL_DATA_TYPE_CS_YUV420_8	0x1c
+#define GASKET_CTRL_DATA_TYPE_CS_YUV420_10	0x1d
+#define GASKET_CTRL_DATA_TYPE_YUV422_8	0x1e
+#define GASKET_CTRL_DATA_TYPE_YUV422_10	0x1f
+#define GASKET_CTRL_DATA_TYPE_RGB565		0x22
+#define GASKET_CTRL_DATA_TYPE_RGB666		0x23
+#define GASKET_CTRL_DATA_TYPE_RGB888		0x24
+#define GASKET_CTRL_DATA_TYPE_RAW6		0x28
+#define GASKET_CTRL_DATA_TYPE_RAW7		0x29
+#define GASKET_CTRL_DATA_TYPE_RAW8		0x2a
+#define GASKET_CTRL_DATA_TYPE_RAW10		0x2b
+#define GASKET_CTRL_DATA_TYPE_RAW12		0x2c
+#define GASKET_CTRL_DATA_TYPE_RAW14		0x2d
 
-#define GASKET_0_CTRL_DUAL_COMP_ENABLE		BIT(1)
-#define GASKET_0_CTRL_ENABLE			BIT(0)
+#define GASKET_CTRL_DUAL_COMP_ENABLE		BIT(1)
+#define GASKET_CTRL_ENABLE			BIT(0)
 
-#define DISP_MIX_GASKET_0_HSIZE			0x04
-#define DISP_MIX_GASKET_0_VSIZE			0x08
+#define DISP_MIX_GASKET_HSIZE			0x04
+#define DISP_MIX_GASKET_VSIZE			0x08
 
 #define ISP_DEWARP_CTRL				0x138
 #define ISP_DEWARP_CTRL_ISP_0_DISABLE		BIT(0)
@@ -286,12 +286,14 @@ struct mipi_csis_event {
  *                       multiple of 2^pix_width_alignment
  * @code: corresponding media bus code
  * @fmt_reg: MIPI_CSIS_CONFIG register value
+ * @gasket_fmt_reg: MIPI_CSIS_CONFIG register value
  * @data_alignment: MIPI-CSI data alignment in bits
  */
 struct csis_pix_format {
 	unsigned int pix_width_alignment;
 	u32 code;
 	u32 fmt_reg;
+	u32 gasket_fmt_reg;
 	u8 data_alignment;
 };
 
@@ -454,54 +456,77 @@ static const struct csis_pix_format mipi_csis_formats[] = {
 	{
 		.code = MEDIA_BUS_FMT_YUYV8_2X8,
 		.fmt_reg = MIPI_CSIS_ISPCFG_FMT_YCBCR422_8BIT,
+		.gasket_fmt_reg = GASKET_CTRL_DATA_TYPE_YUV422_8,
 		.data_alignment = 16,
 	}, {
 		.code = MEDIA_BUS_FMT_RGB888_1X24,
 		.fmt_reg = MIPI_CSIS_ISPCFG_FMT_RGB888,
+		.gasket_fmt_reg = GASKET_CTRL_DATA_TYPE_RGB888,
 		.data_alignment = 24,
 	}, {
 		.code = MEDIA_BUS_FMT_UYVY8_2X8,
 		.fmt_reg = MIPI_CSIS_ISPCFG_FMT_YCBCR422_8BIT,
+		.gasket_fmt_reg = GASKET_CTRL_DATA_TYPE_YUV422_8,
 		.data_alignment = 16,
 	}, {
 		.code = MEDIA_BUS_FMT_VYUY8_2X8,
 		.fmt_reg = MIPI_CSIS_ISPCFG_FMT_YCBCR422_8BIT,
+		.gasket_fmt_reg = GASKET_CTRL_DATA_TYPE_YUV422_8,
 		.data_alignment = 16,
 	}, {
 		.code = MEDIA_BUS_FMT_SBGGR8_1X8,
 		.fmt_reg = MIPI_CSIS_ISPCFG_FMT_RAW8,
+		.gasket_fmt_reg = GASKET_CTRL_DATA_TYPE_RAW8,
 		.data_alignment = 8,
 	}, {
 		.code = MEDIA_BUS_FMT_SBGGR10_1X10,
 		.fmt_reg = MIPI_CSIS_ISPCFG_FMT_RAW10,
+		.gasket_fmt_reg = GASKET_CTRL_DATA_TYPE_RAW10,
 		.data_alignment = 16,
 	}, {
 		.code = MEDIA_BUS_FMT_SGBRG10_1X10,
 		.fmt_reg = MIPI_CSIS_ISPCFG_FMT_RAW10,
+		.gasket_fmt_reg = GASKET_CTRL_DATA_TYPE_RAW10,
 		.data_alignment = 16,
 	}, {
 		.code = MEDIA_BUS_FMT_SGRBG10_1X10,
 		.fmt_reg = MIPI_CSIS_ISPCFG_FMT_RAW10,
+		.gasket_fmt_reg = GASKET_CTRL_DATA_TYPE_RAW10,
 		.data_alignment = 16,
 	}, {
 		.code = MEDIA_BUS_FMT_SRGGB10_1X10,
 		.fmt_reg = MIPI_CSIS_ISPCFG_FMT_RAW10,
+		.gasket_fmt_reg = GASKET_CTRL_DATA_TYPE_RAW10,
 		.data_alignment = 16,
 	}, {
 		.code = MEDIA_BUS_FMT_SBGGR12_1X12,
 		.fmt_reg = MIPI_CSIS_ISPCFG_FMT_RAW12,
+		.gasket_fmt_reg = GASKET_CTRL_DATA_TYPE_RAW12,
 		.data_alignment = 16,
 	}, {
 		.code = MEDIA_BUS_FMT_SGBRG12_1X12,
 		.fmt_reg = MIPI_CSIS_ISPCFG_FMT_RAW12,
+		.gasket_fmt_reg = GASKET_CTRL_DATA_TYPE_RAW12,
 		.data_alignment = 16,
 	}, {
 		.code = MEDIA_BUS_FMT_SGRBG12_1X12,
 		.fmt_reg = MIPI_CSIS_ISPCFG_FMT_RAW12,
+		.gasket_fmt_reg = GASKET_CTRL_DATA_TYPE_RAW12,
 		.data_alignment = 16,
 	}, {
 		.code = MEDIA_BUS_FMT_SRGGB12_1X12,
 		.fmt_reg = MIPI_CSIS_ISPCFG_FMT_RAW12,
+		.gasket_fmt_reg = GASKET_CTRL_DATA_TYPE_RAW12,
+		.data_alignment = 16,
+	}, {
+		.code = MEDIA_BUS_FMT_Y8_1X8,
+		.fmt_reg = MIPI_CSIS_ISPCFG_FMT_RAW8,
+		.gasket_fmt_reg = GASKET_CTRL_DATA_TYPE_RAW8,
+		.data_alignment = 8,
+	}, {
+		.code = MEDIA_BUS_FMT_Y10_1X10,
+		.fmt_reg = MIPI_CSIS_ISPCFG_FMT_RAW10,
+		.gasket_fmt_reg = GASKET_CTRL_DATA_TYPE_RAW10,
 		.data_alignment = 16,
 	},
 };
@@ -559,9 +584,9 @@ static void dump_gasket_regs(struct csi_state *state, const char *label)
 		u32 offset;
 		const char * const name;
 	} registers[] = {
-		{ 0x60, "GPR_GASKET_0_CTRL" },
-		{ 0x64, "GPR_GASKET_0_HSIZE" },
-		{ 0x68, "GPR_GASKET_0_VSIZE" },
+		{ 0x60, "GPR_GASKET_CTRL" },
+		{ 0x64, "GPR_GASKET_HSIZE" },
+		{ 0x68, "GPR_GASKET_VSIZE" },
 	};
 	u32 i, cfg;
 
@@ -943,62 +968,22 @@ static void disp_mix_gasket_config(struct csi_state *state)
 	struct regmap *gasket = state->gasket;
 	struct csis_pix_format const *fmt = state->csis_fmt;
 	struct v4l2_mbus_framefmt *mf = &state->format;
-	s32 fmt_val = -EINVAL;
+	s32 fmt_val = fmt->gasket_fmt_reg;
 	u32 val;
 
-	switch (fmt->code) {
-	case MEDIA_BUS_FMT_RGB888_1X24:
-		fmt_val = GASKET_0_CTRL_DATA_TYPE_RGB888;
-		break;
-	case MEDIA_BUS_FMT_YUYV8_2X8:
-	case MEDIA_BUS_FMT_YVYU8_2X8:
-	case MEDIA_BUS_FMT_UYVY8_2X8:
-	case MEDIA_BUS_FMT_VYUY8_2X8:
-		fmt_val = GASKET_0_CTRL_DATA_TYPE_YUV422_8;
-		break;
-	case MEDIA_BUS_FMT_SBGGR8_1X8:
-		fmt_val = GASKET_0_CTRL_DATA_TYPE_RAW8;
-		break;
-	case MEDIA_BUS_FMT_SBGGR10_1X10:
-		fmt_val = GASKET_0_CTRL_DATA_TYPE_RAW10;
-		break;
-	case MEDIA_BUS_FMT_SGBRG10_1X10:
-		fmt_val = GASKET_0_CTRL_DATA_TYPE_RAW10;
-		break;
-	case MEDIA_BUS_FMT_SGRBG10_1X10:
-		fmt_val = GASKET_0_CTRL_DATA_TYPE_RAW10;
-		break;
-	case MEDIA_BUS_FMT_SRGGB10_1X10:
-		fmt_val = GASKET_0_CTRL_DATA_TYPE_RAW10;
-		break;
-	case MEDIA_BUS_FMT_SBGGR12_1X12:
-		fmt_val = GASKET_0_CTRL_DATA_TYPE_RAW12;
-		break;
-	case MEDIA_BUS_FMT_SGBRG12_1X12:
-		fmt_val = GASKET_0_CTRL_DATA_TYPE_RAW12;
-		break;
-	case MEDIA_BUS_FMT_SGRBG12_1X12:
-		fmt_val = GASKET_0_CTRL_DATA_TYPE_RAW12;
-		break;
-	case MEDIA_BUS_FMT_SRGGB12_1X12:
-		fmt_val = GASKET_0_CTRL_DATA_TYPE_RAW12;
-		break;
-	default:
-		pr_err("gasket not support format %d\n", fmt->code);
-		return;
-	}
-
-	regmap_read(gasket, DISP_MIX_GASKET_0_CTRL, &val);
-	if (fmt_val == GASKET_0_CTRL_DATA_TYPE_YUV422_8)
-		val |= GASKET_0_CTRL_DUAL_COMP_ENABLE;
-	val |= GASKET_0_CTRL_DATA_TYPE(fmt_val);
-	regmap_write(gasket, DISP_MIX_GASKET_0_CTRL, val);
+	regmap_read(gasket, DISP_MIX_GASKET_CTRL, &val);
+	val &= ~GASKET_CTRL_DUAL_COMP_ENABLE;
+	if (fmt_val == GASKET_CTRL_DATA_TYPE_YUV422_8)
+		val |= GASKET_CTRL_DUAL_COMP_ENABLE;
+	val &= ~GASKET_CTRL_DATA_TYPE_MASK;
+	val |= GASKET_CTRL_DATA_TYPE(fmt_val);
+	regmap_write(gasket, DISP_MIX_GASKET_CTRL, val);
 
 	if (WARN_ON(!mf->width || !mf->height))
 		return;
 
-	regmap_write(gasket, DISP_MIX_GASKET_0_HSIZE, mf->width);
-	regmap_write(gasket, DISP_MIX_GASKET_0_VSIZE, mf->height);
+	regmap_write(gasket, DISP_MIX_GASKET_HSIZE, mf->width);
+	regmap_write(gasket, DISP_MIX_GASKET_VSIZE, mf->height);
 }
 
 static void disp_mix_gasket_enable(struct csi_state *state, bool enable)
@@ -1006,12 +991,12 @@ static void disp_mix_gasket_enable(struct csi_state *state, bool enable)
 	struct regmap *gasket = state->gasket;
 
 	if (enable)
-		regmap_update_bits(gasket, DISP_MIX_GASKET_0_CTRL,
-					GASKET_0_CTRL_ENABLE,
-					GASKET_0_CTRL_ENABLE);
+		regmap_update_bits(gasket, DISP_MIX_GASKET_CTRL,
+					GASKET_CTRL_ENABLE,
+					GASKET_CTRL_ENABLE);
 	else
-		regmap_update_bits(gasket, DISP_MIX_GASKET_0_CTRL,
-					GASKET_0_CTRL_ENABLE,
+		regmap_update_bits(gasket, DISP_MIX_GASKET_CTRL,
+					GASKET_CTRL_ENABLE,
 					0);
 }
 
@@ -1141,7 +1126,6 @@ static int mipi_csis_set_fmt(struct v4l2_subdev *mipi_sd,
 	}
 
 	format->pad = source_pad->index;
-	mf->code = MEDIA_BUS_FMT_UYVY8_2X8;
 	ret = v4l2_subdev_call(sen_sd, pad, set_fmt, NULL, format);
 	if (ret < 0) {
 		v4l2_err(&state->sd, "%s, set sensor format fail\n", __func__);
@@ -1150,6 +1134,7 @@ static int mipi_csis_set_fmt(struct v4l2_subdev *mipi_sd,
 
 	csis_fmt = find_csis_format(mf->code);
 	if (!csis_fmt) {
+		v4l2_warn(&state->sd, "%s, no CSIS format found for 0x%X\n", __func__, mf->code);
 		csis_fmt = &mipi_csis_formats[0];
 		mf->code = csis_fmt->code;
 	}
@@ -1436,29 +1421,38 @@ static int csis_s_fmt(struct v4l2_subdev *sd, struct csi_sam_format *fmt)
 
 	switch (fmt->format) {
 	case V4L2_PIX_FMT_SBGGR10:
-	    code = MEDIA_BUS_FMT_SBGGR10_1X10;
-	    break;
+		code = MEDIA_BUS_FMT_SBGGR10_1X10;
+		break;
 	case V4L2_PIX_FMT_SGBRG10:
-	    code = MEDIA_BUS_FMT_SGBRG10_1X10;
-	    break;
+		code = MEDIA_BUS_FMT_SGBRG10_1X10;
+		break;
 	case V4L2_PIX_FMT_SGRBG10:
-	    code = MEDIA_BUS_FMT_SGRBG10_1X10;
-	    break;
+		code = MEDIA_BUS_FMT_SGRBG10_1X10;
+		break;
 	case V4L2_PIX_FMT_SRGGB10:
-	    code = MEDIA_BUS_FMT_SRGGB10_1X10;
-	    break;
+		code = MEDIA_BUS_FMT_SRGGB10_1X10;
+		break;
 	case V4L2_PIX_FMT_SBGGR12:
-	    code = MEDIA_BUS_FMT_SBGGR12_1X12;
-	    break;
+		code = MEDIA_BUS_FMT_SBGGR12_1X12;
+		break;
 	case V4L2_PIX_FMT_SGBRG12:
-	    code = MEDIA_BUS_FMT_SGBRG12_1X12;
-	    break;
+		code = MEDIA_BUS_FMT_SGBRG12_1X12;
+		break;
 	case V4L2_PIX_FMT_SGRBG12:
-	    code = MEDIA_BUS_FMT_SGRBG12_1X12;
-	    break;
+		code = MEDIA_BUS_FMT_SGRBG12_1X12;
+		break;
 	case V4L2_PIX_FMT_SRGGB12:
-	    code = MEDIA_BUS_FMT_SRGGB12_1X12;
-	    break;
+		code = MEDIA_BUS_FMT_SRGGB12_1X12;
+		break;
+	case V4L2_PIX_FMT_SGRBG8:
+		code = MEDIA_BUS_FMT_SGBRG8_1X8;
+		break;
+	case V4L2_PIX_FMT_GREY:
+		code = MEDIA_BUS_FMT_Y8_1X8;
+		break;
+	case V4L2_PIX_FMT_Y10P:
+		code = MEDIA_BUS_FMT_Y10_1X10;
+		break;
 	default:
 		return -EINVAL;
 	}
@@ -2001,7 +1995,8 @@ static void mipi_csis_imx8mp_phy_reset(struct csi_state *state)
 		if ((code.code == MEDIA_BUS_FMT_SRGGB8_1X8) ||
 				(code.code == MEDIA_BUS_FMT_SGRBG8_1X8) ||
 				(code.code == MEDIA_BUS_FMT_SGBRG8_1X8) ||
-				(code.code == MEDIA_BUS_FMT_SBGGR8_1X8)) {
+				(code.code == MEDIA_BUS_FMT_SBGGR8_1X8) ||
+				(code.code == MEDIA_BUS_FMT_Y8_1X8)) {
 			mipi_csis_imx8mp_dewarp_ctl_data_type(state,
 					 ISP_DEWARP_CTRL_DATA_TYPE_RAW8);
 			v4l2_dbg(1, debug, &state->sd,
@@ -2009,7 +2004,8 @@ static void mipi_csis_imx8mp_phy_reset(struct csi_state *state)
 		} else if ((code.code == MEDIA_BUS_FMT_SRGGB10_1X10) ||
 				(code.code == MEDIA_BUS_FMT_SGRBG10_1X10) ||
 				(code.code == MEDIA_BUS_FMT_SGBRG10_1X10) ||
-				(code.code == MEDIA_BUS_FMT_SBGGR10_1X10)) {
+				(code.code == MEDIA_BUS_FMT_SBGGR10_1X10) ||
+				(code.code == MEDIA_BUS_FMT_Y10_1X10)) {
 			mipi_csis_imx8mp_dewarp_ctl_data_type(state,
 					ISP_DEWARP_CTRL_DATA_TYPE_RAW10);
 			v4l2_dbg(1, debug, &state->sd,

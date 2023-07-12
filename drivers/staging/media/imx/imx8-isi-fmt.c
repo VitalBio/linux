@@ -88,6 +88,35 @@ struct mxc_isi_fmt mxc_isi_out_formats[] = {
 		.colplanes	= 1,
 		.align		= 2,
 		.mbus_code	= MEDIA_BUS_FMT_RGB888_1X24,
+	}, {
+		.name		= "GBRG8 bayer",
+		.fourcc		= V4L2_PIX_FMT_SGRBG8,
+		.depth		= { 8 },
+		/* Expecting not to use the ISI to debayer */
+		.color		= MXC_ISI_OUT_FMT_RAW8,
+		.memplanes	= 1,
+		.colplanes	= 1,
+		.align		= 2,
+		.mbus_code	= MEDIA_BUS_FMT_SGRBG8_1X8,
+	}, {
+		.name		= "RAW8",
+		.fourcc		= V4L2_PIX_FMT_GREY,
+		.depth		= { 8 },
+		.color		= MXC_ISI_OUT_FMT_RAW8,
+		.memplanes	= 1,
+		.colplanes	= 1,
+		.align		= 2,
+		.mbus_code	= MEDIA_BUS_FMT_Y8_1X8,
+	}, {
+		.name		= "RAW10 (packed)",
+		.fourcc		= V4L2_PIX_FMT_Y10P,
+		.depth		= { 10 },
+		.color		= MXC_ISI_OUT_FMT_RAW10P,
+		.memplanes	= 1,
+		.colplanes	= 1,
+		.align		= 3,
+		/* FIXME? qcom-camss maps this way but 1X10 is not quite right */
+		.mbus_code	= MEDIA_BUS_FMT_Y10_1X10,
 	}
 };
 
